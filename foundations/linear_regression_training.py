@@ -19,11 +19,7 @@ class Solution:
         num_iterations: int,
         initial_weights: NDArray[np.float64]
     ) -> NDArray[np.float64]:
-        # For each iteration:
-        #   1. Compute predictions with get_model_prediction(X, weights)
-        #   2. For each weight index j, compute gradient with get_derivative()
-        #   3. Update: weights[j] -= learning_rate * gradient
-        # Return np.round(final_weights, 5)
+
         X = np.asarray(X, dtype=np.float64)
         Y = np.asarray(Y, dtype=np.float64).ravel()
 
