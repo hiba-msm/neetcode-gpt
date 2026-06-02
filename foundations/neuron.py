@@ -4,16 +4,10 @@ from numpy.typing import NDArray
 
 class Solution:
     def forward(self, x: NDArray[np.float64], w: NDArray[np.float64], b: float, activation: str) -> float:
-        # Pre-activation
-        z = np.dot(x, w) + b
+        z = float(np.dot(x, w)) + b
 
-        # Activation
-        if activation == "sigmoid":
-            output = 1 / (1 + np.exp(-z))
-        elif activation == "relu":
-            output = max(0, z)
-        else:
-            raise ValueError("activation must be 'sigmoid' or 'relu'")
+        if activation == "relu":
+            return round(z if z > 0.0 else 0.0, 5)
 
-        return round(float(output), 5)
+        return round(1.0 / (1.0 + math.exp(-z)), 5)
         pass
