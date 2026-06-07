@@ -25,5 +25,5 @@ class Solution:
     def get_loss(self, prediction: TensorType[float], target: TensorType[float]) -> TensorType[float]:
         # Compute Mean Squared Error between prediction and target
         # Use torch.nn.functional.mse_loss(prediction, target)
-        return torch.round(((prediction - target) ** 2).mean(), decimals=4)        
+        return torch.round(torch.nn.functional.mse_loss(prediction, target), decimals=4) 
         pass
