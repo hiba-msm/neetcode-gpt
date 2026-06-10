@@ -11,70 +11,69 @@ class Solution:
         # During inference: normalize using running stats (no batch stats needed)
         # Apply affine transform: y = gamma * x_hat + beta
         # Return (y, running_mean, running_var), all rounded to 4 decimals as lists
-        rows = len(x)
-        cols = len(x[0])
+        n = len(x)
+        d = len(x[0])
 
-        def r4(v: float) -> float:
-            v = round(v, 4)
-            return 0.0 if v == -0.0 else v
+        sqrt_ = sqrt
+        round_ = round
+        rng = range(d)
 
         if training:
-            batch_mean = [0.0] * cols
+            sums = [0.0] * d
+            sums_sq = [0.0] * d
 
             for row in x:
-                for j in range(cols):
-                    batch_mean[j] += row[j]
+                for j in rng:
+                    v = row[j]
+                    sums[j] += v
+                    sums_sq[j] += v * v
 
-            for j in range(cols):
-                batch_mean[j] /= rows
+            mean = [0.0] * d
+            var = [0.0] * d
 
-            batch_var = [0.0] * cols
+            inv_n = 1.0 / n
+            for j in rng:
+                m = sums[j] * inv_n
+                mean[j] = m
+                var[j] = sums_sq[j] * inv_n - m * m
 
-            for row in x:
-                for j in range(cols):
-                    diff = row[j] - batch_mean[j]
-                    batch_var[j] += diff * diff
+            new_mean = [0.0] * d
+            new_var = [0.0] * d
 
-            for j in range(cols):
-                batch_var[j] /= rows
+            one_minus_momentum = 1.0 - momentum
 
-            new_running_mean = [
-                (1 - momentum) * running_mean[j] + momentum * batch_mean[j]
-                for j in range(cols)
-            ]
+            for j in rng:
+                new_mean[j] = one_minus_momentum * running_mean[j] + momentum * mean[j]
+                new_var[j] = one_minus_momentum * running_var[j] + momentum * var[j]
 
-            new_running_var = [
-                (1 - momentum) * running_var[j] + momentum * batch_var[j]
-                for j in range(cols)
-            ]
-
-            denom = [sqrt(batch_var[j] + eps) for j in range(cols)]
+            denom = [sqrt_(var[j] + eps) for j in rng]
 
             y = []
             for row in x:
-                out_row = []
-                for j in range(cols):
-                    x_hat = (row[j] - batch_mean[j]) / denom[j]
-                    out_row.append(r4(gamma[j] * x_hat + beta[j]))
-                y.append(out_row)
+                out = [0.0] * d
+                for j in rng:
+                    out[j] = round_(gamma[j] * ((row[j] - mean[j]) / denom[j]) + beta[j], 4)
+                y.append(out)
+
+            return (
+                y,
+                [round_(v, 4) for v in new_mean],
+                [round_(v, 4) for v in new_var]
+            )
 
         else:
-            denom = [sqrt(running_var[j] + eps) for j in range(cols)]
+            denom = [sqrt_(running_var[j] + eps) for j in rng]
 
             y = []
             for row in x:
-                out_row = []
-                for j in range(cols):
-                    x_hat = (row[j] - running_mean[j]) / denom[j]
-                    out_row.append(r4(gamma[j] * x_hat + beta[j]))
-                y.append(out_row)
+                out = [0.0] * d
+                for j in rng:
+                    out[j] = round_(gamma[j] * ((row[j] - running_mean[j]) / denom[j]) + beta[j], 4)
+                y.append(out)
 
-            new_running_mean = running_mean
-            new_running_var = running_var
-
-        return (
-            y,
-            [r4(v) for v in new_running_mean],
-            [r4(v) for v in new_running_var]
-        )
+            return (
+                y,
+                [round_(v, 4) for v in running_mean],
+                [round_(v, 4) for v in running_var]
+            )
         pass
