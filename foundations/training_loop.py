@@ -17,14 +17,20 @@ class Solution:
         w = np.zeros(n_features, dtype=np.float64)
         b = 0.0
 
+        step = (2.0 * lr) / n_samples
+
+        # Precompute reusable values
+        XtX = X.T @ X
+        Xty = X.T @ y
+        sum_X = X.sum(axis=0)
+        sum_y = float(y.sum())
+
         for _ in range(epochs):
-            y_hat = X @ w + b
-            error = y_hat - y
+            # Gradients using precomputed statistics
+            dw = XtX @ w + b * sum_X - Xty
+            db = sum_X @ w + n_samples * b - sum_y
 
-            dw = (2.0 / n_samples) * (X.T @ error)
-            db = (2.0 / n_samples) * np.sum(error)
-
-            w -= lr * dw
-            b -= lr * db
+            w -= step * dw
+            b -= step * db
 
         return np.round(w, 5), round(float(b), 5)
