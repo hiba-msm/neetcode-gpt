@@ -13,12 +13,9 @@ class Solution(nn.Module):
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x: TensorType[int]) -> TensorType[float]:
-        # x shape: (B, T)
-        embedded = self.embedding(x)          # (B, T, 16)
+        x = self.embedding(x)      # (B, T, 16)
+        x = x.mean(dim=1)          # (B, 16)
+        x = self.linear(x)         # (B, 1)
+        x = self.sigmoid(x)
 
-        averaged = embedded.mean(dim=1)       # (B, 16)
-
-        out = self.linear(averaged)           # (B, 1)
-        out = self.sigmoid(out)               # (B, 1)
-
-        return torch.round(out * 10000) / 10000
+        return torch.round(x * 10000) / 10000
