@@ -1,4 +1,5 @@
 from typing import List
+from collections import Counter
 
 
 class Solution:
@@ -11,39 +12,31 @@ class Solution:
             if n < 2:
                 break
 
-            # Count adjacent pairs manually: faster than Counter here
-            counts = {}
-            prev = tokens[0]
+            # Faster than manual Python counting
+            counts = Counter(zip(tokens, tokens[1:]))
 
-            for i in range(1, n):
-                curr = tokens[i]
-                pair = (prev, curr)
-                counts[pair] = counts.get(pair, 0) + 1
-                prev = curr
-
-            # Find max frequency, lexicographically smallest tie
-            best_pair = None
-            best_count = -1
-
-            for pair, count in counts.items():
-                if count > best_count or (count == best_count and pair < best_pair):
-                    best_pair = pair
-                    best_count = count
-
+            # Highest frequency, lexicographically smallest tie
+            best_pair = min(counts.items(), key=lambda x: (-x[1], x[0]))[0]
             a, b = best_pair
+            merged = a + b
             merges.append([a, b])
 
-            # Merge non-overlapping occurrences left to right
+            # Merge non-overlapping occurrences
             new_tokens = []
+            append = new_tokens.append
             i = 0
+            last = n - 1
 
-            while i < n:
-                if i + 1 < n and tokens[i] == a and tokens[i + 1] == b:
-                    new_tokens.append(a + b)
+            while i < last:
+                if tokens[i] == a and tokens[i + 1] == b:
+                    append(merged)
                     i += 2
                 else:
-                    new_tokens.append(tokens[i])
+                    append(tokens[i])
                     i += 1
+
+            if i == last:
+                append(tokens[i])
 
             tokens = new_tokens
 
