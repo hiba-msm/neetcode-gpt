@@ -13,8 +13,8 @@ class KVCache:
             self.cache_k = new_k
             self.cache_v = new_v
         else:
-            self.cache_k = torch.cat((self.cache_k, new_k), dim=1)
-            self.cache_v = torch.cat((self.cache_v, new_v), dim=1)
+            self.cache_k = torch.cat([self.cache_k, new_k], dim=1)
+            self.cache_v = torch.cat([self.cache_v, new_v], dim=1)
 
         return self.cache_k, self.cache_v
 
@@ -32,7 +32,7 @@ class CachedAttention(nn.Module):
         self.k_proj = nn.Linear(model_dim, model_dim, bias=False)
         self.v_proj = nn.Linear(model_dim, model_dim, bias=False)
 
-        self.model_dim = model_dim
+        self.scale = model_dim ** -0.5
 
     def forward(self, x: torch.Tensor, kv_cache: Optional[KVCache] = None) -> Tuple[torch.Tensor, KVCache]:
         q = self.q_proj(x)
@@ -42,13 +42,12 @@ class CachedAttention(nn.Module):
         if kv_cache is None:
             kv_cache = KVCache()
 
-        full_k, full_v = kv_cache.update(k, v)
+        k, v = kv_cache.update(k, v)
 
-        scores = q @ full_k.transpose(1, 2)
-        scores = scores / (self.model_dim ** 0.5)
+        scores = torch.matmul(q, k.transpose(1, 2))
+        scores.mul_(self.scale)
 
-        weights = torch.softmax(scores, dim=-1)
-
-        out = weights @ full_v
+        att = torch.softmax(scores, dim=-1)
+        out = torch.matmul(att, v)
 
         return torch.round(out * 10000) / 10000, kv_cache
