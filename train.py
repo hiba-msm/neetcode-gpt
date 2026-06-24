@@ -13,37 +13,44 @@ class Solution:
         batch_size: int,
         lr: float
     ) -> float:
-        optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
-
         model.train()
+
+        optimizer = torch.optim.AdamW(
+            model.parameters(),
+            lr=lr,
+            foreach=False
+        )
+
+        device = data.device
+        max_start = data.shape[0] - context_length
+
+        offsets = torch.arange(context_length, device=device).unsqueeze(0)
+
         final_loss = None
 
         for epoch in range(epochs):
             torch.manual_seed(epoch)
 
-            # Random start indices
-            max_start = len(data) - context_length
-            starts = torch.randint(0, max_start, (batch_size,))
+            starts = torch.randint(
+                0,
+                max_start,
+                (batch_size, 1),
+                device=device
+            )
 
-            # Build batch indices
-            offsets = torch.arange(context_length)
-            indices = starts[:, None] + offsets[None, :]
+            idx = starts + offsets
 
-            # X and shifted Y
-            X = data[indices]
-            Y = data[indices + 1]
+            X = data[idx]
+            Y = data[idx + 1]
 
-            # Forward pass
-            logits = model(X)  # (B, T, vocab_size)
+            logits = model(X)
 
-            B, T, C = logits.shape
+            loss = F.cross_entropy(
+                logits.view(-1, logits.shape[-1]),
+                Y.reshape(-1)
+            )
 
-            logits_flat = logits.reshape(B * T, C)
-            targets_flat = Y.reshape(B * T)
-
-            loss = F.cross_entropy(logits_flat, targets_flat)
-
-            optimizer.zero_grad()
+            optimizer.zero_grad(set_to_none=True)
             loss.backward()
             optimizer.step()
 
