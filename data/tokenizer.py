@@ -1,5 +1,4 @@
 from typing import List
-from collections import Counter
 
 
 class Solution:
@@ -8,31 +7,39 @@ class Solution:
         merges = []
 
         for _ in range(num_merges):
-            if len(tokens) < 2:
+            n = len(tokens)
+            if n < 2:
                 break
 
-            # Count adjacent pairs
-            pair_counts = Counter()
-            for i in range(len(tokens) - 1):
-                pair_counts[(tokens[i], tokens[i + 1])] += 1
+            # Count adjacent pairs manually: faster than Counter here
+            counts = {}
+            prev = tokens[0]
 
-            if not pair_counts:
-                break
+            for i in range(1, n):
+                curr = tokens[i]
+                pair = (prev, curr)
+                counts[pair] = counts.get(pair, 0) + 1
+                prev = curr
 
-            # Most frequent pair, tie broken lexicographically
-            best_pair = min(pair_counts.keys(), key=lambda p: (-pair_counts[p], p))
-            merges.append([best_pair[0], best_pair[1]])
+            # Find max frequency, lexicographically smallest tie
+            best_pair = None
+            best_count = -1
 
-            # Merge all non-overlapping occurrences left to right
+            for pair, count in counts.items():
+                if count > best_count or (count == best_count and pair < best_pair):
+                    best_pair = pair
+                    best_count = count
+
+            a, b = best_pair
+            merges.append([a, b])
+
+            # Merge non-overlapping occurrences left to right
             new_tokens = []
             i = 0
-            while i < len(tokens):
-                if (
-                    i < len(tokens) - 1
-                    and tokens[i] == best_pair[0]
-                    and tokens[i + 1] == best_pair[1]
-                ):
-                    new_tokens.append(tokens[i] + tokens[i + 1])
+
+            while i < n:
+                if i + 1 < n and tokens[i] == a and tokens[i + 1] == b:
+                    new_tokens.append(a + b)
                     i += 2
                 else:
                     new_tokens.append(tokens[i])
